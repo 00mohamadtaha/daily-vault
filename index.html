@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>کارتابل آنلاین وقایع (Supabase)</title>
+  <style>
+    @font-face{
+      font-family:'BTitr';
+      src: local('B Titr'), local('BTitr');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face{
+      font-family:'BNazanin';
+      src: local('B Nazanin'), local('BNazanin');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    :root{
+      --bg:#0b1020; --text:rgba(255,255,255,.92); --muted:rgba(255,255,255,.62);
+      --stroke:rgba(255,255,255,.14); --card:rgba(255,255,255,.07); --shadow:0 18px 60px rgba(0,0,0,.45);
+      --r1:18px; --r2:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: 'BNazanin','B Nazanin','BTitr','B Titr', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(900px 500px at 80% 10%, rgba(120,140,255,.22), transparent 60%),
+        radial-gradient(700px 500px at 10% 30%, rgba(80,255,210,.14), transparent 60%),
+        radial-gradient(900px 700px at 50% 100%, rgba(255,120,180,.14), transparent 60%),
+        var(--bg);
+      color:var(--text); min-height:100vh;
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:22px 14px 70px}
+    .top{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{width:44px;height:44px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.08);box-shadow:var(--shadow);display:grid;place-items:center}
+    .title h1{margin:0;font-size:16px; font-family:'BTitr','B Titr','BNazanin','B Nazanin', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+    .title p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+    .btn{
+      border:1px solid var(--stroke); background:rgba(255,255,255,.07); color:var(--text);
+      padding:10px 12px;border-radius:12px;cursor:pointer; font-size:13px;
+    }
+    .btn.primary{border-color:rgba(120,140,255,.35);background:rgba(120,140,255,.18)}
+    .btn.danger{border-color:rgba(255,92,122,.35);background:rgba(255,92,122,.14)}
+    .chip{border:1px solid var(--stroke);background:rgba(255,255,255,.06);border-radius:999px;padding:8px 10px;display:flex;gap:8px;align-items:center}
+    .chip input{border:none;outline:none;background:transparent;color:var(--text);width:210px}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}
+    @media (max-width: 920px){.grid{grid-template-columns:1fr}.chip input{width:160px}}
+    .panel{border:1px solid var(--stroke);background:rgba(255,255,255,.06);border-radius:var(--r1);box-shadow:var(--shadow);overflow:hidden}
+    .ph{padding:12px 12px 10px;border-bottom:1px solid rgba(255,255,255,.10);display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+    .ph h2{margin:0;font-size:14px; font-family:'BTitr','B Titr','BNazanin','B Nazanin', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+    .list{max-height:72vh;overflow:auto;padding:10px}
+    details.day{border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.04);margin:10px 0;overflow:hidden}
+    summary{list-style:none;cursor:pointer;padding:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+    summary::-webkit-details-marker{display:none}
+    .dayL{display:flex;gap:10px;align-items:center;min-width:0}
+    .sw{width:12px;height:12px;border-radius:4px;background:var(--swatch);box-shadow:0 0 0 4px rgba(255,255,255,.06);flex:0 0 auto}
+    .dayT{display:flex;flex-direction:column;gap:3px;min-width:0}
+    .dayT b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; font-family:'BTitr','B Titr','BNazanin','B Nazanin', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+    .dayT span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .count{font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06)}
+    .body{padding:12px;border-top:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.02)}
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .field label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+    input[type="text"], input[type="email"], input[type="password"], textarea{
+      width:100%; border-radius:14px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.05); color:var(--text); outline:none; padding:10px 12px; font-size:13px;
+      font-family: 'BNazanin','B Nazanin','BTitr','B Titr', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    textarea{min-height:86px;resize:vertical}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .muted{color:var(--muted)}
+    .event{border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.045);overflow:hidden;margin-top:10px}
+    .eh{padding:10px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,.03)}
+    .eh b{font-size:13px;max-width:690px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; font-family:'BTitr','B Titr','BNazanin','B Nazanin', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+    .ib{padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-size:12px;
+      font-family: 'BNazanin','B Nazanin','BTitr','B Titr', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    .ib.danger{border-color:rgba(255,92,122,.35);background:rgba(255,92,122,.12)}
+    .ib.ok{border-color:rgba(54,211,153,.35);background:rgba(54,211,153,.12)}
+    .eb{padding:10px;display:grid;gap:10px}
+    .thumbs{display:flex;gap:10px;flex-wrap:wrap}
+    .thumb{width:140px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);overflow:hidden}
+    .thumb img{display:block;width:100%;height:110px;object-fit:cover}
+    .thumb .tact{padding:8px;display:flex;gap:8px;justify-content:space-between;align-items:center}
+    .toast{position:fixed;left:14px;bottom:14px;max-width:min(520px,calc(100vw - 28px));
+      background:rgba(20,25,40,.88);border:1px solid rgba(255,255,255,.16);padding:10px 12px;border-radius:14px;box-shadow:var(--shadow);
+      opacity:0;transform:translateY(10px);transition:.18s;pointer-events:none;font-size:13px;z-index:9999}
+    .toast.show{opacity:1;transform:none}
+    .modalB{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:9998}
+    .modalB.show{display:flex}
+    .modal{width:min(520px,100%);border-radius:22px;border:1px solid rgba(255,255,255,.16);
+      background:rgba(15,18,30,.88);box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(10px)}
+    .modal header{padding:12px 12px 10px;border-bottom:1px solid rgba(255,255,255,.10);display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .modal header h3{margin:0;font-size:14px; font-family:'BTitr','B Titr','BNazanin','B Nazanin', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;}
+    .modal .content{padding:12px;display:grid;gap:10px}
+    .modal footer{padding:12px;border-top:1px solid rgba(255,255,255,.10);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;background:rgba(255,255,255,.03)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="logo">🗂️</div>
+        <div class="title">
+          <h1>کارتابل آنلاین وقایع (Supabase)</h1>
+          <p>ورود با ایمیل/رمز • ذخیره‌سازی ابری • عکس نامحدود برای هر رویداد</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="chip">🔎 <input id="search" placeholder="جستجو..." /></div>
+        <button class="btn" id="logoutBtn">خروج</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="ph">
+          <h2>📅 روزها <span id="rangeInfo" class="muted" style="font-size:12px"></span></h2>
+          <div class="row">
+            <button class="btn" id="todayBtn">امروز</button>
+            <button class="btn primary" id="refreshBtn">به‌روزرسانی داده‌ها</button>
+          </div>
+        </div>
+        <div class="list" id="daysList"></div>
+      </div>
+
+      <div class="panel">
+        <div class="ph">
+          <h2>➕ افزودن/ویرایش رویداد</h2>
+          <span class="muted" style="font-size:12px">حتی برای روزهای گذشته</span>
+        </div>
+        <div style="padding:12px">
+          <div class="field">
+            <label>روز انتخاب‌شده</label>
+            <input id="selectedDay" type="text" readonly placeholder="یک روز را از لیست انتخاب کن..." />
+          </div>
+
+          <div class="field">
+            <label>عنوان</label>
+            <input id="title" type="text" placeholder="مثلاً: تعمیر گوشی / جلسه / کار مهم..." />
+          </div>
+
+          <div class="field">
+            <label>توضیح</label>
+            <textarea id="desc" placeholder="جزئیات رویداد را بنویس..."></textarea>
+          </div>
+
+          <div class="field">
+            <label>لینک (اختیاری)</label>
+            <div class="row">
+              <input id="link" type="text" placeholder="https://..." />
+              <button class="btn" id="copyLinkBtn">کپی لینک</button>
+            </div>
+          </div>
+
+          <div class="row" style="justify-content:flex-end;margin-top:10px">
+            <button class="btn primary" id="saveBtn">ذخیره (افزودن/آپدیت)</button>
+          </div>
+
+          <div class="muted" style="font-size:12px;line-height:1.8;margin-top:12px">
+            ✅ هیچ گزینه‌ای برای ریست/حذف یکباره همه اطلاعات در این کارتابل وجود ندارد.<br/>
+            عکس‌ها: در بخش رویدادها می‌توانی چند عکس اضافه کنی و هر عکس دکمه دانلود دارد.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Auth Modal -->
+  <div class="modalB show" id="authB">
+    <div class="modal">
+      <header>
+        <h3>🔐 ورود / ثبت‌نام</h3>
+        <button class="ib" id="authClose">✖</button>
+      </header>
+      <div class="content">
+        <div class="field">
+          <label>ایمیل</label>
+          <input id="email" type="email" placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label>رمز</label>
+          <input id="password" type="password" placeholder="حداقل ۶ کاراکتر" />
+        </div>
+        <div class="muted" style="font-size:12px;line-height:1.8">
+          اگر قبلاً ثبت‌نام کردی، «ورود» را بزن. اگر نه، «ثبت‌نام».
+        </div>
+      </div>
+      <footer>
+        <button class="btn" id="signupBtn">ثبت‌نام</button>
+        <button class="btn primary" id="loginBtn">ورود</button>
+      </footer>
+    </div>
+  </div>
+
+<script type="module">
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+  // ========= 1) SET THESE =========
+  const SUPABASE_URL = "https://qbogksyqahqtbmpbbfcb.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_RrYli8HDU2sOJqu4zF1S3Q_iPCb-_ni";
+  const BUCKET = "daily-attachments";
+  // ================================
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const $ = (id) => document.getElementById(id);
+  const toast = (msg) => {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._h);
+    t._h = setTimeout(()=>t.classList.remove("show"), 2200);
+  };
+
+  // Date range (10 years from today)
+  const grMonthFa = ["ژانویه","فبریه","مارس","آوریل","مه","ژوئن","جولای","اوت","سپتامبر","اکتبر","نوامبر","دسامبر"];
+  function formatDualDate(dateObj){
+    const fmtFa = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {day:"numeric", month:"long", year:"numeric"});
+    const partsFa = fmtFa.formatToParts(dateObj);
+    const dayFa = partsFa.find(p=>p.type==="day")?.value ?? "";
+    const monthFa = partsFa.find(p=>p.type==="month")?.value ?? "";
+    const yearFa = partsFa.find(p=>p.type==="year")?.value ?? "";
+    const d = new Date(dateObj);
+    return `${dayFa} ${monthFa} ${yearFa} - ${d.getDate()} ${grMonthFa[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  const start = new Date(); start.setHours(0,0,0,0);
+  const end = new Date(start); end.setFullYear(end.getFullYear()+10);
+  const days = [];
+  for(let d=new Date(start), i=0; d<end; d.setDate(d.getDate()+1), i++){
+    days.push({ iso: d.toISOString().slice(0,10), d:new Date(d), idx:i });
+  }
+  $("rangeInfo").textContent = `از ${formatDualDate(start)} تا ${formatDualDate(new Date(end.getTime()-86400000))}`;
+
+  const hueForIndex = (i) => (i*37)%360;
+
+  // App state
+  let session = null;
+  let user = null;
+
+  let selectedISO = null;
+  let selectedEvent = null; // {id, day, title, description, link}
+  let eventsByDay = new Map(); // iso -> array
+  let attachmentsByEvent = new Map(); // event_id -> array
+
+  function setSelectedDay(iso){
+    selectedISO = iso;
+    const item = days.find(x=>x.iso===iso);
+    $("selectedDay").value = item ? formatDualDate(item.d) : "";
+  }
+
+  async function loadData(){
+    if(!user) return;
+
+    // Load all events in 10y range (for this user only; RLS enforces)
+    const { data: evs, error } = await supabase
+      .from("events")
+      .select("*")
+      .gte("day", days[0].iso)
+      .lte("day", days[days.length-1].iso)
+      .order("day", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if(error){ console.error(error); toast("خطا در دریافت داده‌ها"); return; }
+
+    eventsByDay = new Map();
+    for(const e of (evs||[])){
+      const iso = e.day;
+      if(!eventsByDay.has(iso)) eventsByDay.set(iso, []);
+      eventsByDay.get(iso).push(e);
+    }
+
+    // Load attachments for loaded events
+    const ids = (evs||[]).map(e=>e.id);
+    attachmentsByEvent = new Map();
+    if(ids.length){
+      const { data: atts, error: e2 } = await supabase
+        .from("attachments")
+        .select("*")
+        .in("event_id", ids)
+        .order("created_at", { ascending: false });
+      if(e2){ console.error(e2); toast("خطا در دریافت عکس‌ها"); }
+      for(const a of (atts||[])){
+        if(!attachmentsByEvent.has(a.event_id)) attachmentsByEvent.set(a.event_id, []);
+        attachmentsByEvent.get(a.event_id).push(a);
+      }
+    }
+
+    renderDays();
+  }
+
+  function matchesSearch(ev, q){
+    if(!q) return true;
+    const hay = `${ev.title}\n${ev.description}\n${ev.link}`.toLowerCase();
+    return hay.includes(q);
+  }
+
+  function renderDays(keepOpenISO=null){
+    const q = ($("search").value||"").trim().toLowerCase();
+    const root = $("daysList");
+    root.innerHTML = "";
+
+    const frag = document.createDocumentFragment();
+
+    for(const {iso, d, idx} of days){
+      const hue = hueForIndex(idx);
+      const swatch = `hsl(${hue} 90% 70%)`;
+
+      const dayEvents = eventsByDay.get(iso) || [];
+      const filtered = q ? dayEvents.filter(e=>matchesSearch(e,q)) : dayEvents;
+      if(q && filtered.length===0) continue;
+
+      const det = document.createElement("details");
+      det.className = "day";
+      det.style.setProperty("--swatch", swatch);
+      if(keepOpenISO && keepOpenISO===iso) det.open = true;
+
+      const sum = document.createElement("summary");
+      sum.innerHTML = `
+        <div class="dayL">
+          <div class="sw"></div>
+          <div class="dayT">
+            <b>${formatDualDate(d)}</b>
+            <span>${iso}</span>
+          </div>
+        </div>
+        <div class="count">${filtered.length} رویداد</div>
+      `;
+      sum.addEventListener("click", () => setSelectedDay(iso));
+
+      const body = document.createElement("div");
+      body.className = "body";
+
+      const addBtn = document.createElement("button");
+      addBtn.className = "btn primary";
+      addBtn.textContent = "➕ افزودن رویداد برای این روز";
+      addBtn.addEventListener("click", ()=>{ setSelectedDay(iso); selectedEvent=null; clearEditor(); $("title").focus(); });
+
+      const top = document.createElement("div");
+      top.className = "row";
+      top.style.justifyContent="space-between";
+      top.style.alignItems="center";
+      top.appendChild(addBtn);
+
+      body.appendChild(top);
+
+      if(filtered.length===0){
+        const empty = document.createElement("div");
+        empty.className = "muted";
+        empty.style.marginTop="10px";
+        empty.textContent = "برای این روز رویدادی ثبت نشده.";
+        body.appendChild(empty);
+      } else {
+        for(const ev of filtered){
+          body.appendChild(renderEventCard(ev));
+        }
+      }
+
+      det.appendChild(sum);
+      det.appendChild(body);
+      frag.appendChild(det);
+    }
+
+    root.appendChild(frag);
+  }
+
+  function clearEditor(){
+    $("title").value="";
+    $("desc").value="";
+    $("link").value="";
+  }
+
+  function fillEditor(ev){
+    $("title").value = ev.title || "";
+    $("desc").value = ev.description || "";
+    $("link").value = ev.link || "";
+  }
+
+  function renderEventCard(ev){
+    const wrap = document.createElement("div");
+    wrap.className="event";
+
+    const head = document.createElement("div");
+    head.className="eh";
+    head.innerHTML = `<b>${ev.title || "بدون عنوان"}</b>`;
+
+    const acts = document.createElement("div");
+    acts.className="row";
+    acts.innerHTML = `
+      <button class="ib ok">📋 کپی متن</button>
+      <button class="ib">🔗 کپی لینک</button>
+      <button class="ib">✏️ ویرایش</button>
+      <button class="ib danger">🗑️ حذف</button>
+    `;
+
+    const btnCopyText = acts.children[0];
+    const btnCopyLink = acts.children[1];
+    const btnEdit = acts.children[2];
+    const btnDel = acts.children[3];
+
+    btnCopyText.addEventListener("click", ()=>copyToClipboard(ev.description||""));
+    btnCopyLink.addEventListener("click", ()=>copyToClipboard(ev.link||""));
+
+    btnEdit.addEventListener("click", ()=>{
+      selectedEvent = ev;
+      setSelectedDay(ev.day);
+      fillEditor(ev);
+      toast("حالت ویرایش فعال شد");
+    });
+
+    btnDel.addEventListener("click", async ()=>{
+      const ok = confirm("این رویداد حذف شود؟ (فقط همین مورد)");
+      if(!ok) return;
+
+      // delete attachments files + rows (per-item only)
+      const atts = attachmentsByEvent.get(ev.id) || [];
+      for(const a of atts){
+        await supabase.storage.from(BUCKET).remove([a.path]);
+      }
+      await supabase.from("attachments").delete().eq("event_id", ev.id);
+
+      const { error } = await supabase.from("events").delete().eq("id", ev.id);
+      if(error){ console.error(error); toast("حذف ناموفق"); return; }
+
+      toast("حذف شد");
+      selectedEvent = null;
+      clearEditor();
+      await loadData();
+      renderDays(ev.day);
+    });
+
+    head.appendChild(acts);
+
+    const body = document.createElement("div");
+    body.className="eb";
+
+    const t = document.createElement("div");
+    t.className="muted";
+    t.style.fontSize="12px";
+    t.style.lineHeight="1.8";
+    t.textContent = ev.description ? ev.description.slice(0,220) + (ev.description.length>220?"…":"") : "بدون توضیح";
+
+    body.appendChild(t);
+
+    // attachments
+    const atts = attachmentsByEvent.get(ev.id) || [];
+    const attHead = document.createElement("div");
+    attHead.className="row";
+    attHead.style.justifyContent="space-between";
+    attHead.style.alignItems="center";
+    attHead.innerHTML = `<div class="muted" style="font-size:12px">📷 عکس‌ها (${atts.length})</div>`;
+
+    const fileInput = document.createElement("input");
+    fileInput.type="file";
+    fileInput.accept="image/*";
+    fileInput.multiple = true;
+
+    const uploadBtn = document.createElement("button");
+    uploadBtn.className="btn";
+    uploadBtn.textContent="آپلود عکس(ها)";
+    uploadBtn.addEventListener("click", ()=>fileInput.click());
+
+    fileInput.addEventListener("change", async ()=>{
+      const files = Array.from(fileInput.files||[]);
+      if(!files.length) return;
+
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = "در حال آپلود…";
+
+      try{
+        for(const f of files){
+          const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+          const safeName = `${crypto.randomUUID()}.${ext}`;
+          const path = `${user.id}/${ev.id}/${safeName}`;
+
+          // upload to storage (private bucket)
+          const { error: upErr } = await supabase.storage
+            .from(BUCKET)
+            .upload(path, f, { contentType: f.type, upsert: false });
+
+          if(upErr){ console.error(upErr); toast("آپلود یک فایل ناموفق بود"); continue; }
+
+          // insert row
+          const { error: insErr } = await supabase.from("attachments").insert({
+            user_id: user.id,
+            event_id: ev.id,
+            path,
+            mime: f.type || "",
+            size: f.size || 0
+          });
+          if(insErr){ console.error(insErr); toast("ثبت عکس در دیتابیس ناموفق بود"); }
+        }
+        toast("آپلود انجام شد ✅");
+      } finally{
+        uploadBtn.disabled = false;
+        uploadBtn.textContent="آپلود عکس(ها)";
+        fileInput.value="";
+        await loadData();
+        renderDays(ev.day);
+      }
+    });
+
+    attHead.appendChild(uploadBtn);
+    attHead.appendChild(fileInput);
+    body.appendChild(attHead);
+
+    const thumbs = document.createElement("div");
+    thumbs.className="thumbs";
+
+    for(const a of atts){
+      const th = document.createElement("div");
+      th.className="thumb";
+
+      const img = document.createElement("img");
+      img.alt = "attachment";
+
+      // show preview via signed URL (short-lived)
+      const url = awaitSignedUrl(a.path, 60*30); // 30 min
+      url.then(u => img.src = u || "");
+
+      const tact = document.createElement("div");
+      tact.className="tact";
+
+      const dwn = document.createElement("button");
+      dwn.className="ib";
+      dwn.textContent="⬇️ دانلود";
+      dwn.addEventListener("click", async ()=>{
+        const u = await awaitSignedUrl(a.path, 60*60);
+        if(!u) return toast("دانلود ممکن نشد");
+        const link = document.createElement("a");
+        link.href = u;
+        link.download = "photo";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      });
+
+      const del = document.createElement("button");
+      del.className="ib danger";
+      del.textContent="حذف";
+      del.addEventListener("click", async ()=>{
+        const ok = confirm("این عکس حذف شود؟");
+        if(!ok) return;
+        await supabase.storage.from(BUCKET).remove([a.path]);
+        await supabase.from("attachments").delete().eq("id", a.id);
+        toast("عکس حذف شد");
+        await loadData();
+        renderDays(ev.day);
+      });
+
+      tact.appendChild(dwn);
+      tact.appendChild(del);
+
+      th.appendChild(img);
+      th.appendChild(tact);
+      thumbs.appendChild(th);
+    }
+
+    if(atts.length) body.appendChild(thumbs);
+
+    wrap.appendChild(head);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  async function awaitSignedUrl(path, expiresIn){
+    // createSignedUrl usage (Storage) :contentReference[oaicite:6]{index=6}
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn);
+    if(error){ console.error(error); return null; }
+    return data?.signedUrl || null;
+  }
+
+  async function copyToClipboard(txt){
+    try{ await navigator.clipboard.writeText(txt||""); toast("کپی شد 📋"); }
+    catch{ toast("کپی نشد (اجازه مرورگر)"); }
+  }
+
+  // Editor actions
+  $("copyLinkBtn").addEventListener("click", ()=>copyToClipboard($("link").value||""));
+
+  $("saveBtn").addEventListener("click", async ()=>{
+    if(!user) return toast("اول وارد شو");
+    if(!selectedISO) return toast("یک روز انتخاب کن");
+
+    const payload = {
+      user_id: user.id,
+      day: selectedISO,
+      title: ($("title").value||"").trim() || "بدون عنوان",
+      description: ($("desc").value||"").trim(),
+      link: ($("link").value||"").trim()
+    };
+
+    if(selectedEvent?.id){
+      const { error } = await supabase.from("events")
+        .update({ title: payload.title, description: payload.description, link: payload.link, updated_at: new Date().toISOString() })
+        .eq("id", selectedEvent.id);
+      if(error){ console.error(error); toast("آپدیت ناموفق"); return; }
+      toast("ویرایش ذخیره شد ✅");
+    } else {
+      const { error } = await supabase.from("events").insert(payload);
+      if(error){ console.error(error); toast("ثبت ناموفق"); return; }
+      toast("رویداد اضافه شد ✅");
+    }
+
+    selectedEvent = null;
+    clearEditor();
+    await loadData();
+    renderDays(selectedISO);
+  });
+
+  $("todayBtn").addEventListener("click", ()=>{
+    const iso = new Date().toISOString().slice(0,10);
+    setSelectedDay(iso);
+    renderDays(iso);
+    setTimeout(()=>{
+      const sums = $("daysList").querySelectorAll("details.day summary");
+      for(const s of sums){
+        const isoText = s.querySelector(".dayT span")?.textContent;
+        if(isoText===iso){ s.scrollIntoView({behavior:"smooth", block:"center"}); break; }
+      }
+    }, 50);
+  });
+
+  $("refreshBtn").addEventListener("click", async ()=>{ await loadData(); toast("به‌روزرسانی شد"); });
+
+  $("search").addEventListener("input", ()=>renderDays(selectedISO));
+
+  // Auth UI
+  const authB = $("authB");
+  const closeAuth = ()=>authB.classList.remove("show");
+  const openAuth = ()=>authB.classList.add("show");
+  $("authClose").addEventListener("click", closeAuth);
+
+  $("signupBtn").addEventListener("click", async ()=>{
+    const email = ($("email").value||"").trim();
+    const password = ($("password").value||"").trim();
+    if(!email || !password) return toast("ایمیل و رمز را کامل کن");
+    const { error } = await supabase.auth.signUp({ email, password });
+    if(error){ console.error(error); toast("ثبت‌نام ناموفق"); return; }
+    toast("ثبت‌نام انجام شد. حالا وارد شو ✅");
+  });
+
+  $("loginBtn").addEventListener("click", async ()=>{
+    const email = ($("email").value||"").trim();
+    const password = ($("password").value||"").trim();
+    if(!email || !password) return toast("ایمیل و رمز را کامل کن");
+
+    // signInWithPassword :contentReference[oaicite:7]{index=7}
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error){ console.error(error); toast("ورود ناموفق"); return; }
+
+    session = data.session;
+    user = data.user;
+    closeAuth();
+    toast("وارد شدی ✅");
+    setSelectedDay(new Date().toISOString().slice(0,10));
+    await loadData();
+  });
+
+  $("logoutBtn").addEventListener("click", async ()=>{
+    await supabase.auth.signOut();
+    session=null; user=null;
+    openAuth();
+    toast("خارج شدی");
+  });
+
+  // Boot: if already logged-in
+  const { data: sess } = await supabase.auth.getSession();
+  if(sess?.session){
+    session = sess.session;
+    user = sess.session.user;
+    closeAuth();
+    setSelectedDay(new Date().toISOString().slice(0,10));
+    await loadData();
+  } else {
+    openAuth();
+  }
+</script>
+</body>
+</html>
