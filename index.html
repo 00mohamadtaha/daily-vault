@@ -110,8 +110,15 @@
           <p>ورود با ایمیل/رمز • ذخیره‌سازی ابری • عکس نامحدود برای هر رویداد</p>
         </div>
       </div>
+
       <div class="row">
         <div class="chip">🔎 <input id="search" placeholder="جستجو..." /></div>
+
+        <div class="chip">📅
+          <input id="daySearch" type="date" />
+          <button class="btn" id="goDayBtn" style="padding:8px 10px">برو</button>
+        </div>
+
         <button class="btn" id="logoutBtn">خروج</button>
       </div>
     </div>
@@ -219,7 +226,7 @@
     t._h = setTimeout(()=>t.classList.remove("show"), 2200);
   };
 
-  // Date range (10 years from today)
+  // ===== Date formatting (unchanged output) =====
   const grMonthFa = ["ژانویه","فبریه","مارس","آوریل","مه","ژوئن","جولای","اوت","سپتامبر","اکتبر","نوامبر","دسامبر"];
   function formatDualDate(dateObj){
     const fmtFa = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {day:"numeric", month:"long", year:"numeric"});
@@ -230,13 +237,30 @@
     const d = new Date(dateObj);
     return `${dayFa} ${monthFa} ${yearFa} - ${d.getDate()} ${grMonthFa[d.getMonth()]} ${d.getFullYear()}`;
   }
-  const start = new Date(); start.setHours(0,0,0,0);
-  const end = new Date(start); end.setFullYear(end.getFullYear()+10);
-  const days = [];
-  for(let d=new Date(start), i=0; d<end; d.setDate(d.getDate()+1), i++){
-    days.push({ iso: d.toISOString().slice(0,10), d:new Date(d), idx:i });
+
+  // ===== Dynamic days range (FIX: past days won't disappear) =====
+  let days = [];
+  let daysStartISO = null;
+  let daysEndISO = null;
+
+  function buildDaysRange(startDate, endDate){
+    const start = new Date(startDate); start.setHours(0,0,0,0);
+    const end = new Date(endDate); end.setHours(0,0,0,0);
+
+    const arr = [];
+    for(let d=new Date(start), i=0; d<=end; d.setDate(d.getDate()+1), i++){
+      arr.push({ iso: d.toISOString().slice(0,10), d:new Date(d), idx:i });
+    }
+    days = arr;
+    daysStartISO = arr[0]?.iso || null;
+    daysEndISO = arr[arr.length-1]?.iso || null;
+
+    if(daysStartISO && daysEndISO){
+      $("rangeInfo").textContent = `از ${formatDualDate(start)} تا ${formatDualDate(end)}`;
+    } else {
+      $("rangeInfo").textContent = "";
+    }
   }
-  $("rangeInfo").textContent = `از ${formatDualDate(start)} تا ${formatDualDate(new Date(end.getTime()-86400000))}`;
 
   const hueForIndex = (i) => (i*37)%360;
 
@@ -255,15 +279,52 @@
     $("selectedDay").value = item ? formatDualDate(item.d) : "";
   }
 
+  function openAndScrollToISO(iso){
+    if(!iso) return;
+    setSelectedDay(iso);
+    renderDays(iso);
+    setTimeout(()=>{
+      const sums = $("daysList").querySelectorAll("details.day summary");
+      for(const s of sums){
+        const isoText = s.querySelector(".dayT span")?.textContent;
+        if(isoText===iso){
+          s.scrollIntoView({behavior:"smooth", block:"center"});
+          break;
+        }
+      }
+    }, 80);
+  }
+
   async function loadData(){
     if(!user) return;
 
-    // Load all events in 10y range (for this user only; RLS enforces)
+    // 1) Build day range from earliest event day (buffer) to 10 years ahead
+    const today = new Date(); today.setHours(0,0,0,0);
+    const endDate = new Date(today); endDate.setFullYear(endDate.getFullYear() + 10);
+
+    const { data: minRow, error: minErr } = await supabase
+      .from("events")
+      .select("day")
+      .order("day", { ascending: true })
+      .limit(1);
+
+    if(minErr){ console.error(minErr); }
+
+    let startDate = new Date(today);
+    const minDayISO = minRow?.[0]?.day || null;
+    if(minDayISO){
+      startDate = new Date(minDayISO);
+      startDate.setDate(startDate.getDate() - 7); // buffer 1 هفته
+    }
+
+    buildDaysRange(startDate, endDate);
+
+    // 2) Load all events in this range
     const { data: evs, error } = await supabase
       .from("events")
       .select("*")
-      .gte("day", days[0].iso)
-      .lte("day", days[days.length-1].iso)
+      .gte("day", daysStartISO)
+      .lte("day", daysEndISO)
       .order("day", { ascending: true })
       .order("created_at", { ascending: false });
 
@@ -276,7 +337,7 @@
       eventsByDay.get(iso).push(e);
     }
 
-    // Load attachments for loaded events
+    // 3) Load attachments for loaded events
     const ids = (evs||[]).map(e=>e.id);
     attachmentsByEvent = new Map();
     if(ids.length){
@@ -292,7 +353,7 @@
       }
     }
 
-    renderDays();
+    renderDays(selectedISO);
   }
 
   function matchesSearch(ev, q){
@@ -409,7 +470,7 @@
 
     btnEdit.addEventListener("click", ()=>{
       selectedEvent = ev;
-      setSelectedDay(ev.day);
+      openAndScrollToISO(ev.day);
       fillEditor(ev);
       toast("حالت ویرایش فعال شد");
     });
@@ -418,7 +479,6 @@
       const ok = confirm("این رویداد حذف شود؟ (فقط همین مورد)");
       if(!ok) return;
 
-      // delete attachments files + rows (per-item only)
       const atts = attachmentsByEvent.get(ev.id) || [];
       for(const a of atts){
         await supabase.storage.from(BUCKET).remove([a.path]);
@@ -448,7 +508,6 @@
 
     body.appendChild(t);
 
-    // attachments
     const atts = attachmentsByEvent.get(ev.id) || [];
     const attHead = document.createElement("div");
     attHead.className="row";
@@ -479,14 +538,12 @@
           const safeName = `${crypto.randomUUID()}.${ext}`;
           const path = `${user.id}/${ev.id}/${safeName}`;
 
-          // upload to storage (private bucket)
           const { error: upErr } = await supabase.storage
             .from(BUCKET)
             .upload(path, f, { contentType: f.type, upsert: false });
 
           if(upErr){ console.error(upErr); toast("آپلود یک فایل ناموفق بود"); continue; }
 
-          // insert row
           const { error: insErr } = await supabase.from("attachments").insert({
             user_id: user.id,
             event_id: ev.id,
@@ -520,8 +577,7 @@
       const img = document.createElement("img");
       img.alt = "attachment";
 
-      // show preview via signed URL (short-lived)
-      const url = awaitSignedUrl(a.path, 60*30); // 30 min
+      const url = awaitSignedUrl(a.path, 60*30);
       url.then(u => img.src = u || "");
 
       const tact = document.createElement("div");
@@ -570,7 +626,6 @@
   }
 
   async function awaitSignedUrl(path, expiresIn){
-    // createSignedUrl usage (Storage) :contentReference[oaicite:6]{index=6}
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, expiresIn);
     if(error){ console.error(error); return null; }
     return data?.signedUrl || null;
@@ -580,6 +635,15 @@
     try{ await navigator.clipboard.writeText(txt||""); toast("کپی شد 📋"); }
     catch{ toast("کپی نشد (اجازه مرورگر)"); }
   }
+
+  // Search / Jump
+  $("search").addEventListener("input", ()=>renderDays(selectedISO));
+
+  $("goDayBtn").addEventListener("click", ()=>{
+    const iso = $("daySearch").value;
+    if(!iso) return toast("تاریخ را انتخاب کن");
+    openAndScrollToISO(iso);
+  });
 
   // Editor actions
   $("copyLinkBtn").addEventListener("click", ()=>copyToClipboard($("link").value||""));
@@ -611,25 +675,15 @@
     selectedEvent = null;
     clearEditor();
     await loadData();
-    renderDays(selectedISO);
+    openAndScrollToISO(selectedISO);
   });
 
   $("todayBtn").addEventListener("click", ()=>{
     const iso = new Date().toISOString().slice(0,10);
-    setSelectedDay(iso);
-    renderDays(iso);
-    setTimeout(()=>{
-      const sums = $("daysList").querySelectorAll("details.day summary");
-      for(const s of sums){
-        const isoText = s.querySelector(".dayT span")?.textContent;
-        if(isoText===iso){ s.scrollIntoView({behavior:"smooth", block:"center"}); break; }
-      }
-    }, 50);
+    openAndScrollToISO(iso);
   });
 
   $("refreshBtn").addEventListener("click", async ()=>{ await loadData(); toast("به‌روزرسانی شد"); });
-
-  $("search").addEventListener("input", ()=>renderDays(selectedISO));
 
   // Auth UI
   const authB = $("authB");
@@ -651,7 +705,6 @@
     const password = ($("password").value||"").trim();
     if(!email || !password) return toast("ایمیل و رمز را کامل کن");
 
-    // signInWithPassword :contentReference[oaicite:7]{index=7}
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if(error){ console.error(error); toast("ورود ناموفق"); return; }
 
@@ -659,8 +712,9 @@
     user = data.user;
     closeAuth();
     toast("وارد شدی ✅");
-    setSelectedDay(new Date().toISOString().slice(0,10));
+
     await loadData();
+    openAndScrollToISO(new Date().toISOString().slice(0,10));
   });
 
   $("logoutBtn").addEventListener("click", async ()=>{
@@ -676,8 +730,8 @@
     session = sess.session;
     user = sess.session.user;
     closeAuth();
-    setSelectedDay(new Date().toISOString().slice(0,10));
     await loadData();
+    openAndScrollToISO(new Date().toISOString().slice(0,10));
   } else {
     openAuth();
   }
